@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.0)
+set(CMAKE_BUILD_TYPE RELEASE)
+set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -pedantic -Werror -O3 -march=native -mtune=native -fno-rtti -fno-exceptions -fno-asynchronous-unwind-tables")
+set(SOURCES huffman.cpp)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+add_library(huffman STATIC ${SOURCES})
