@@ -1,3 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
+add_subdirectory(dictionary)
 add_subdirectory(huffman)
+add_subdirectory(union)
 add_subdirectory(tester)

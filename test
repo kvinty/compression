@@ -4,22 +4,6 @@ mkdir build
 cd build
 cmake ..
 make
-dd if=/dev/urandom of=in bs=1M count=100
-echo >> in  # Add newline at the end
-echo "Time of encoding and decoding 100MiB of random data:"
-time -f %E ./tester/tester < in > out
-echo "Check hashes:"
-sha512sum in out
-hash_in=`sha512sum in | python3 -c "print(input().split()[0])"`
-hash_out=`sha512sum out | python3 -c "print(input().split()[0])"`
-echo $hash_in $hash_out | python3 -c "hash = input().split(); exit(hash[0] != hash[1])"
-code=`echo $?`
-if `test $code = 0`
-then
-	echo "OK, hashes are equal :)"
-else
-	echo "Something went wrong :("
-fi
 cd ..
+./build/tester/tester $1
 rm -r build
-exit $code

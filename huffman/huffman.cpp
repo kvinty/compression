@@ -1,8 +1,30 @@
 #include "huffman.hpp"
+#include <iostream>
+namespace Codecs
+{
+huffman_codec::node::node(size_t init_freq, byte letter) noexcept
+: frequency(init_freq)
+, left(nullptr)
+, right(nullptr)
+, letter(letter)
+, is_leaf(true)
+{}
 
-using Codecs::HuffmanCodec;
+huffman_codec::node::node(node *left, node *right) noexcept
+: frequency(0)
+, left(left)
+, right(right)
+, letter(0)
+, is_leaf(false)
+{
+    if (left)
+        frequency += left->frequency;
+    if (right)
+        frequency += right->frequency;
+}
 
-void HuffmanCodec::generate_map(const HuffmanCodec::Node *v, const HuffmanCodec::representation &prefix) noexcept
+void huffman_codec::generate_map(const huffman_codec::node *v,
+const huffman_codec::representation &prefix) noexcept
 {
     if (v->is_leaf)
         mapping[v->letter] = prefix;
@@ -17,15 +39,16 @@ void HuffmanCodec::generate_map(const HuffmanCodec::Node *v, const HuffmanCodec:
         if (v->right)
         {
             representation r_prefix = prefix;
-            r_prefix.first[r_prefix.second >> LOG_CHARBIT] |=
-            static_cast<uint8_t>(1 << (r_prefix.second & (CHARBIT - 1)));
+            r_prefix.first[r_prefix.second >> LOG_CHAR_BIT] |=
+            static_cast<byte>(1 << (r_prefix.second & (CHAR_BIT - 1)));
             ++r_prefix.second;
             generate_map(v->right, r_prefix);
         }
     }
 }
 
-void HuffmanCodec::dfs(const HuffmanCodec::Node *ptr, std::string &str) const noexcept
+void huffman_codec::dfs(const huffman_codec::node *ptr,
+std::string &str) const noexcept
 {
     if (ptr->is_leaf)
     {
@@ -49,59 +72,58 @@ void HuffmanCodec::dfs(const HuffmanCodec::Node *ptr, std::string &str) const no
     }
 }
 
-inline void HuffmanCodec::encode_byte(uint8_t byte, uint8_t size, std::string &encoded, size_t &bits_written) const noexcept
+inline void huffman_codec::encode_byte(byte c, byte size,
+std::string &encoded, size_t &bits_written) const noexcept
 {
-    encoded.back() |= static_cast<uint8_t>(byte << bits_written);
-    if (bits_written + size <= CHARBIT)
+    encoded.back() |= static_cast<byte>(c << bits_written);
+    if (bits_written + size <= CHAR_BIT)
         bits_written += size;
     else
     {
         encoded.push_back(0);
-        encoded.back() |= static_cast<uint8_t>(byte >> (CHARBIT - bits_written));
-        bits_written = size - (CHARBIT - bits_written);
+        encoded.back() |= static_cast<byte>(c >> (CHAR_BIT - bits_written));
+        bits_written = size - (CHAR_BIT - bits_written);
     }
 }
 
-void HuffmanCodec::learn(const std::vector<std::experimental::string_view> &vec) noexcept
+bool huffman_codec::node_comparator::operator()(const node *l, const node *r)
+const noexcept
 {
-    struct NodeComparator
-    {
-        bool operator()(const Node *l, const Node *r) const noexcept
-        {
-            return l->frequency > r->frequency;
-        }
-    };
+    return l->frequency > r->frequency;
+}
 
-    for (std::experimental::string_view str : vec)
-        for (uint8_t i : str)
+void huffman_codec::learn(const std::vector<std::experimental::string_view> &v)
+noexcept
+{
+    for (const std::experimental::string_view &str : v)
+        for (byte i : str)
             ++frequencies[i];
 
-    std::priority_queue<Node *, std::vector<Node *>, NodeComparator> trees;
+    std::priority_queue<node *, std::vector<node *>, node_comparator> trees;
     for (size_t i = 0; i != SYMBOLS; ++i)
-        if (frequencies[i])
-        {
-            Node *tmp = new Node(frequencies[i], static_cast<uint8_t>(i));
-            allocated_memory.push_back(tmp);
-            trees.push(tmp);
-        }
+    {
+        node *tmp = new node(frequencies[i], static_cast<byte>(i));
+        allocated_memory.push_back(tmp);
+        trees.push(tmp);
+    }
 
     if (trees.size() == 0)
         return;
 
     if (trees.size() == 1)
     {
-        root = new Node(trees.top(), nullptr);
+        root = new node(trees.top(), nullptr);
         allocated_memory.push_back(root);
     }
     else
     {
         while (trees.size() > 1)
         {
-            Node *l_child = trees.top();
+            node *l_child = trees.top();
             trees.pop();
-            Node *r_child = trees.top();
+            node *r_child = trees.top();
             trees.pop();
-            Node *parent = new Node(l_child, r_child);
+            node *parent = new node(l_child, r_child);
             allocated_memory.push_back(parent);
             trees.push(parent);
         }
@@ -110,42 +132,49 @@ void HuffmanCodec::learn(const std::vector<std::experimental::string_view> &vec)
     generate_map(root, representation());
 }
 
-std::string HuffmanCodec::save() const noexcept
+std::string huffman_codec::save() const noexcept
 {
-    std::string res;
-    if (root)
-        dfs(root, res);
-    return res;
+    if (ready_save.empty())
+    {
+        std::string result;
+        if (root)
+            dfs(root, result);
+        ready_save = result;
+        return result;
+    }
+    else
+        return ready_save;
 }
 
-void HuffmanCodec::load(const std::experimental::string_view &str) noexcept
+void huffman_codec::load(const std::experimental::string_view &s) noexcept
 {
     reset();
-    root = new HuffmanCodec::Node(nullptr, nullptr);
+    ready_save = s.to_string();
+    root = new huffman_codec::node(nullptr, nullptr);
     allocated_memory.push_back(root);
-    std::stack<HuffmanCodec::Node *> nodes;
+    std::stack<huffman_codec::node *> nodes;
     nodes.push(root);
     size_t i = 0;
-    HuffmanCodec::Node *vertex = root;
-    while (i != str.size())
+    huffman_codec::node *vertex = root;
+    while (i != s.size())
     {
-        if (str[i] == LEAF)
+        if (s[i] == LEAF)
         {
             ++i;
-            vertex->letter = str[i];
+            vertex->letter = s[i];
             vertex->is_leaf = true;
         }
-        else if (str[i] == LEFT)
+        else if (s[i] == LEFT)
         {
-            HuffmanCodec::Node *v = new HuffmanCodec::Node(nullptr, nullptr);
+            huffman_codec::node *v = new huffman_codec::node(nullptr, nullptr);
             allocated_memory.push_back(v);
             vertex->left = v;
             nodes.push(vertex);
             vertex = v;
         }
-        else if (str[i] == RIGHT)
+        else if (s[i] == RIGHT)
         {
-            HuffmanCodec::Node *v = new HuffmanCodec::Node(nullptr, nullptr);
+            huffman_codec::node *v = new huffman_codec::node(nullptr, nullptr);
             allocated_memory.push_back(v);
             vertex->right = v;
             nodes.push(vertex);
@@ -161,41 +190,47 @@ void HuffmanCodec::load(const std::experimental::string_view &str) noexcept
     generate_map(root, representation());
 }
 
-size_t HuffmanCodec::sample_size(size_t records) const noexcept
+size_t huffman_codec::sample_size(size_t records) const noexcept
 {
-    return records;
+    return std::min(records,
+    std::max(static_cast<size_t>(1000), records / 10));
 }
 
-void HuffmanCodec::reset() noexcept
+void huffman_codec::reset() noexcept
 {
-    for (HuffmanCodec::Node *i : allocated_memory)
+    for (huffman_codec::node *&i : allocated_memory)
         delete i;
     allocated_memory.clear();
+    ready_save.clear();
 }
 
-void HuffmanCodec::encode(std::string &encoded, const std::experimental::string_view &raw) const noexcept
+void huffman_codec::encode(std::string &encoded,
+const std::experimental::string_view &raw) const noexcept
 {
     encoded.assign(1, 0);
     size_t bits_written = 0;
-    for (uint8_t i : raw)
+    for (byte i : raw)
     {
         representation code = mapping[i];
         size_t j;
-        for (j = 0; j != static_cast<size_t>(code.second >> LOG_CHARBIT); ++j)
-            encode_byte(code.first[j], CHARBIT, encoded, bits_written);
-        encode_byte(code.first[j], code.second & (CHARBIT - 1), encoded, bits_written);
+        for (j = 0; j != static_cast<size_t>(code.second >> LOG_CHAR_BIT); ++j)
+            encode_byte(code.first[j], CHAR_BIT, encoded, bits_written);
+        encode_byte(code.first[j], static_cast<byte>
+        (code.second & (CHAR_BIT - 1)), encoded, bits_written);
     }
-    encoded.push_back(static_cast<uint8_t>(CHARBIT - bits_written));
+    encoded.push_back(static_cast<byte>(CHAR_BIT - bits_written));
 }
 
-void HuffmanCodec::decode(std::string &raw, const std::experimental::string_view &encoded) const noexcept
+void huffman_codec::decode(std::string &raw,
+const std::experimental::string_view &encoded) const noexcept
 {
     raw.clear();
     size_t bits_read = 0;
-    std::experimental::string_view::const_iterator i = std::begin(encoded);
-    while (i < encoded.end() - 2 || (i == encoded.end() - 2 && bits_read + encoded.back() < CHARBIT))
+    std::experimental::string_view::const_iterator i = encoded.begin();
+    while (i < encoded.end() - 2 ||
+    (i == encoded.end() - 2 && bits_read + encoded.back() < CHAR_BIT))
     {
-        HuffmanCodec::Node *ptr = root;
+        huffman_codec::node *ptr = root;
         while (true)
         {
             if (ptr->is_leaf)
@@ -203,10 +238,9 @@ void HuffmanCodec::decode(std::string &raw, const std::experimental::string_view
                 raw.push_back(ptr->letter);
                 break;
             }
-            if (bits_read != CHARBIT)
+            if (bits_read != CHAR_BIT)
             {
-                bool c = (*i & (1 << bits_read));
-                if (c)
+                if (*i & (1 << bits_read))
                     ptr = ptr->right;
                 else
                     ptr = ptr->left;
@@ -219,4 +253,10 @@ void HuffmanCodec::decode(std::string &raw, const std::experimental::string_view
             }
         }
     }
+}
+
+huffman_codec::~huffman_codec() noexcept
+{
+    reset();
+}
 }

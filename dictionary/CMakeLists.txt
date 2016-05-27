@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
-project(huffman)
+project(dictionary)
 include(${CMAKE_SOURCE_DIR}/flags.cmake)
-set(SOURCES huffman.cpp)
+set(SOURCES suffix_automaton.cpp trie.cpp dictionary.cpp)
 include_directories(${CMAKE_SOURCE_DIR}/${PROJECT})
 add_library(${PROJECT_NAME} ${LINKAGE_TYPE} ${SOURCES})
