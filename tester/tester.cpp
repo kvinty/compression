@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
         }
     }
     Codecs::dictionary_codec zipper;
-    std::string tmp ,encoded, decoded;;
+    std::string tmp,encoded, decoded;
     std::vector<std::string> input;
     std::vector<std::experimental::string_view> sample;
     std::ifstream in(argv[argc - 1], std::ios_base::binary);

@@ -96,8 +96,10 @@ std::string dictionary_codec::save() const noexcept
         for (const std::string &s : table)
             if (!s.empty())
             {
+                size_t len = s.size();
+                result += static_cast<byte>(len);
+                result += static_cast<byte>(len >> 8);
                 result += s;
-                result.push_back('\0');
             }
         ready_save = result;
         return result;
@@ -110,11 +112,14 @@ void dictionary_codec::load(const std::experimental::string_view &s) noexcept
 {
     reset();
     ready_save = s.to_string();
-    size_t pos = 0, n = s.size(), i = 0;
-    while (pos != n)
+    size_t pos = 0, i = 0;
+    while (pos != s.size())
     {
-        table[i] = std::string(s.data() + pos);
-        pos += table[i].size() + 1;
+        size_t len = static_cast<byte>(s[pos]) +
+                    (static_cast<byte>(s[pos + 1]) << 8);
+        pos += 2;
+        table[i] = std::string(s.data() + pos, len);
+        pos += len;
         ++i;
     }
     for (std::array<std::string, 1 << 16>::const_iterator t = table.begin();
