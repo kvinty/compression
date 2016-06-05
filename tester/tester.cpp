@@ -20,8 +20,7 @@ int main(int argc, char *argv[])
 {
     static constexpr uint8_t NL = 0;
     static constexpr uint8_t LE = 1;
-    std::streampos file_size = 0;
-    size_t read = 0;
+    size_t read = 0, file_size = 0;
     uint8_t type = NL;
     uint32_t size;
     std::ios_base::sync_with_stdio(false);
@@ -61,7 +60,7 @@ int main(int argc, char *argv[])
     if (type == LE)
     {
         in.seekg(0,std::ios_base::end);
-        file_size = in.tellg();
+        file_size = static_cast<size_t>(in.tellg());
         in.seekg(0,std::ios_base::beg);
     }
     double start, finish;
