@@ -1,7 +1,8 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
-#include <map>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -21,6 +22,8 @@ static constexpr byte ESCAPE = 1;
 static constexpr byte ESCAPE_H1 = 2;
 static constexpr byte ESCAPE_H2 = 3;
 
+static constexpr size_t INF = std::numeric_limits<size_t>::max();
+
 class trie
 {
 protected:
@@ -28,7 +31,7 @@ protected:
     {
         bool is_terminal;
         uint16_t escape;
-        std::map<byte, size_t> next;
+        std::array<size_t, 256> next;
 
         node() noexcept;
     };

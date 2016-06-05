@@ -3,7 +3,9 @@
 trie::node::node() noexcept
 : is_terminal(false)
 , escape(0)
-{}
+{
+    next.fill(INF);
+}
 
 // Returns length of the longest found string and its number
 std::pair<size_t, uint16_t> trie::find(const std::string &s, size_t start)
@@ -13,11 +15,10 @@ const noexcept
     uint16_t escape = 0;
     for (; start != s.size(); ++start)
     {
-        std::map<byte, size_t>::const_iterator add =
-        data[current].next.find(static_cast<byte>(s[start]));
-        if (add != data[current].next.end())
+        size_t add = data[current].next[static_cast<byte>(s[start])];
+        if (add != INF)
         {
-            current = add->second;
+            current = add;
             ++steps;
             if (data[current].is_terminal)
             {
@@ -36,15 +37,14 @@ void trie::insert(const std::pair<std::string, uint16_t> &s) noexcept
     size_t current = 0;
     for (byte c : s.first)
     {
-        std::map<byte, size_t>::const_iterator add =
-        data[current].next.find(c);
-        if (add != data[current].next.end())
-            current = add->second;
+        size_t add = data[current].next[c];
+        if (add != INF)
+            current = add;
         else
         {
             data.push_back(node());
             size_t last = data.end() - data.begin() - 1;
-            data[current].next.insert({c, last});
+            data[current].next[c] = last;
             current = last;
         }
     }

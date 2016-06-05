@@ -131,7 +131,7 @@ void dictionary_codec::load(const std::experimental::string_view &s) noexcept
 size_t dictionary_codec::sample_size(size_t records) const noexcept
 {
     return std::min(records,
-    std::max(static_cast<size_t>(100), records / 1000));
+    std::max(static_cast<size_t>(500), records / 1000));
 }
 
 void dictionary_codec::reset() noexcept
