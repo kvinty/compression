@@ -57,10 +57,10 @@ trie::trie() noexcept
     data.resize(1);
 }
 
-std::string trie::encode(const std::string &s) const noexcept
+void trie::encode(const std::string &s, std::string &res) const noexcept
 {
-    std::string res;
     size_t n = s.size(), current = 0;
+    res.clear();
     while (current != n)
     {
         std::pair<size_t, uint16_t> search = find(s, current);
@@ -74,7 +74,6 @@ std::string trie::encode(const std::string &s) const noexcept
         else
             res.push_back(static_cast<byte>(s[current++]));
     }
-    return res;
 }
 
 void trie::reset() noexcept

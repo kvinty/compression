@@ -18,7 +18,7 @@ void dictionary_codec::insert_escape(std::string &s) const noexcept
         if (c == ESCAPE || c == ESCAPE_H1)
         {
             tmp.push_back(ESCAPE_H1);
-            tmp.push_back(c + 1);
+            tmp.push_back(static_cast<byte>(c + 1));
         }
         else
             tmp.push_back(c);
@@ -34,7 +34,7 @@ void dictionary_codec::delete_escape(std::string &s) const noexcept
         if (s[i] == ESCAPE_H1)
         {
             ++i;
-            tmp.push_back(s[i] - 1);
+            tmp.push_back(static_cast<byte>(s[i] - 1));
         }
         else
             tmp.push_back(s[i]);
@@ -150,7 +150,7 @@ const std::experimental::string_view &raw) const noexcept
 {
     std::string tmp = raw.to_string();
     insert_escape(tmp);
-    encoded = saved.encode(tmp);
+    saved.encode(tmp, encoded);
 }
 
 void dictionary_codec::decode(std::string &raw,

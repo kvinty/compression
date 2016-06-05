@@ -20,7 +20,8 @@ int main(int argc, char *argv[])
 {
     static constexpr uint8_t NL = 0;
     static constexpr uint8_t LE = 1;
-    size_t file_size, read = 0;
+    std::streampos file_size = 0;
+    size_t read = 0;
     uint8_t type = NL;
     uint32_t size;
     std::ios_base::sync_with_stdio(false);

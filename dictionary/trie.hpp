@@ -44,6 +44,6 @@ protected:
 public:
     void insert(const std::pair<std::string, uint16_t> &s) noexcept;
     trie() noexcept;
-    std::string encode(const std::string &s) const noexcept;
+    void encode(const std::string &s, std::string &res) const noexcept;
     void reset() noexcept;
 };
